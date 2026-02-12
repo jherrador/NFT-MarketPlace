@@ -16,6 +16,7 @@ contract MarketPlace is ReentrancyGuard, Ownable {
     mapping(address => mapping(uint256 => Listing)) public marketplaceListing;
     uint256 public feeListing;
     uint256 public feeSellPercentage;
+    uint256 public accumulatedFees;
 
     event ListNft(address indexed seller_, address indexed nftAddress_, uint256 indexed tokenId_, uint256 price_);
     event CancelListNft(address indexed seller_, address indexed nftAddress_, uint256 indexed tokenId_);
@@ -84,5 +85,12 @@ contract MarketPlace is ReentrancyGuard, Ownable {
         require(feeListing_ > 0, "Wrong Fee");
         feeListing = feeListing_;
         emit FeeListing(feeListing_);
+    }
+
+    function withdrawFees() external onlyOwner {
+        uint256 amount = address(this).balance;
+
+        (bool success, ) = owner().call{value: amount}("");
+        require(success);
     }
 }

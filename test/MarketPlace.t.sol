@@ -213,33 +213,6 @@ contract MarketPlaceTest is Test {
         vm.stopPrank();
     }
 
-    // Helper
-
-    function _list(uint256 price_, address owner_, uint256 tokenIdMinted_) private {
-        uint256 listingFee = marketPlace.feeListing();
-        (, address ownerBefore_,,) = marketPlace.marketplaceListing(address(mockNft), tokenIdMinted_);
-        uint256 sellerBalanceBefore_ = owner_.balance;
-        uint256 marketPlaceListingFee = marketPlace.feeListing();
-        uint256 marketPlaceInitialBalance = address(marketPlace).balance;
-
-        vm.startPrank(owner_);
-        marketPlace.listNft{value: listingFee}(address(mockNft), tokenIdMinted_, price_);
-
-        (address listerNft_, address ownerAfter_, uint256 listedNftTokenId_, uint256 priceAfter_) =
-            marketPlace.marketplaceListing(address(mockNft), tokenIdMinted_);
-
-        assert(ownerBefore_ == address(0) && ownerBefore_ != ownerAfter_);
-        assert(ownerAfter_ == owner_);
-        assert(listerNft_ == address(mockNft));
-        assert(priceAfter_ == price_);
-        assert(listedNftTokenId_ == tokenIdMinted_);
-
-        assert(owner_.balance == sellerBalanceBefore_ - marketPlaceListingFee);
-        assert(address(marketPlace).balance == marketPlaceInitialBalance + marketPlaceListingFee);
-
-        vm.stopPrank();
-    }
-
     function testSetFeeSellPercentageCorrectly() public{
         uint256 marketPlaceSellingFee_ = marketPlace.feeSellPercentage();
         uint256 newFeeSellPercentage_ = 10;
@@ -301,6 +274,85 @@ contract MarketPlaceTest is Test {
         vm.expectRevert("Wrong Fee");
         marketPlace.setFeeListing(newFeeListing);
         
+        vm.stopPrank();
+    }
+
+    function testWithdrawFees() public {
+        uint256 tokenIdMinted_ = _mint(seller);
+        uint256 price_ = 2 ether;
+
+        _list(price_, seller, tokenIdMinted_);
+
+        vm.startPrank(seller);
+        mockNft.approve(address(marketPlace), tokenIdMinted_);
+        (,,, uint256 sellingPrice_) = marketPlace.marketplaceListing(address(mockNft), tokenIdMinted_);
+        vm.stopPrank();
+
+        vm.startPrank(buyer);
+        marketPlace.buyNft{value: sellingPrice_}(address(mockNft), tokenIdMinted_);
+
+        vm.stopPrank();
+
+        uint256 marketPlaceBalanceAfterSell = address(marketPlace).balance;
+        uint256 deployerBalanceBeforeWithDraw = deployer.balance;
+
+        vm.startPrank(deployer);
+        marketPlace.withdrawFees();
+        uint256 marketPlaceBalanceAfterWithdrawFees = address(marketPlace).balance;
+        uint256 deployerBalanceAfterWithDraw = deployer.balance;
+        vm.stopPrank();
+
+        assert(deployerBalanceAfterWithDraw == deployerBalanceBeforeWithDraw + marketPlaceBalanceAfterSell);
+        assert(marketPlaceBalanceAfterSell != 0);
+        assert(marketPlaceBalanceAfterWithdrawFees == 0);
+    }
+
+    function testWithdrawFeesRevertNotOwner() public {
+        uint256 tokenIdMinted_ = _mint(seller);
+        uint256 price_ = 2 ether;
+
+        _list(price_, seller, tokenIdMinted_);
+
+        vm.startPrank(seller);
+        mockNft.approve(address(marketPlace), tokenIdMinted_);
+        (,,, uint256 sellingPrice_) = marketPlace.marketplaceListing(address(mockNft), tokenIdMinted_);
+        vm.stopPrank();
+
+        vm.startPrank(buyer);
+        marketPlace.buyNft{value: sellingPrice_}(address(mockNft), tokenIdMinted_);
+
+        vm.stopPrank();
+
+        vm.startPrank(buyer);
+        vm.expectRevert();
+        marketPlace.withdrawFees();
+        vm.stopPrank();
+    }
+
+    // Helper
+
+    function _list(uint256 price_, address owner_, uint256 tokenIdMinted_) private {
+        uint256 listingFee = marketPlace.feeListing();
+        (, address ownerBefore_,,) = marketPlace.marketplaceListing(address(mockNft), tokenIdMinted_);
+        uint256 sellerBalanceBefore_ = owner_.balance;
+        uint256 marketPlaceListingFee = marketPlace.feeListing();
+        uint256 marketPlaceInitialBalance = address(marketPlace).balance;
+
+        vm.startPrank(owner_);
+        marketPlace.listNft{value: listingFee}(address(mockNft), tokenIdMinted_, price_);
+
+        (address listerNft_, address ownerAfter_, uint256 listedNftTokenId_, uint256 priceAfter_) =
+            marketPlace.marketplaceListing(address(mockNft), tokenIdMinted_);
+
+        assert(ownerBefore_ == address(0) && ownerBefore_ != ownerAfter_);
+        assert(ownerAfter_ == owner_);
+        assert(listerNft_ == address(mockNft));
+        assert(priceAfter_ == price_);
+        assert(listedNftTokenId_ == tokenIdMinted_);
+
+        assert(owner_.balance == sellerBalanceBefore_ - marketPlaceListingFee);
+        assert(address(marketPlace).balance == marketPlaceInitialBalance + marketPlaceListingFee);
+
         vm.stopPrank();
     }
 
