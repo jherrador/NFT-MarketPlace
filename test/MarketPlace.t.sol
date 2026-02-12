@@ -46,7 +46,7 @@ contract MarketPlaceTest is Test {
     function testListNftCorrectly() public {
         uint256 tokenIdMinted = _mint(seller);
         uint256 price_ = 1 ether;
-        
+
         _list(price_, seller, tokenIdMinted);
         vm.stopPrank();
     }
@@ -213,19 +213,19 @@ contract MarketPlaceTest is Test {
         vm.stopPrank();
     }
 
-    function testSetFeeSellPercentageCorrectly() public{
+    function testSetFeeSellPercentageCorrectly() public {
         uint256 marketPlaceSellingFee_ = marketPlace.feeSellPercentage();
         uint256 newFeeSellPercentage_ = 10;
 
         vm.startPrank(deployer);
         marketPlace.setFeeSellPercentage(newFeeSellPercentage_);
-        
+
         assert(newFeeSellPercentage_ != marketPlaceSellingFee_);
         assert(marketPlace.feeSellPercentage() == newFeeSellPercentage_);
         vm.stopPrank();
     }
 
-    function testSetFeeSellPercentageRevertNotOwner() public{
+    function testSetFeeSellPercentageRevertNotOwner() public {
         uint256 newFeeSellPercentage_ = 10;
 
         vm.startPrank(buyer);
@@ -234,7 +234,7 @@ contract MarketPlaceTest is Test {
         vm.stopPrank();
     }
 
-    function testSetFeeSellPercentageRevertWrongFee() public{
+    function testSetFeeSellPercentageRevertWrongFee() public {
         uint256 newFeeSellPercentage_ = 0;
 
         vm.startPrank(deployer);
@@ -243,15 +243,14 @@ contract MarketPlaceTest is Test {
         vm.stopPrank();
     }
 
-
     function testSetFeeListingCorrectly() public {
         uint256 marketPlaceListingFee_ = marketPlace.feeListing();
         uint256 newFeeListing = 10;
 
         vm.startPrank(deployer);
-        
+
         marketPlace.setFeeListing(newFeeListing);
-        
+
         assert(newFeeListing != marketPlaceListingFee_);
         assert(marketPlace.feeListing() == newFeeListing);
         vm.stopPrank();
@@ -263,7 +262,7 @@ contract MarketPlaceTest is Test {
         vm.startPrank(seller);
         vm.expectRevert();
         marketPlace.setFeeListing(newFeeListing);
-        
+
         vm.stopPrank();
     }
 
@@ -273,7 +272,7 @@ contract MarketPlaceTest is Test {
         vm.startPrank(deployer);
         vm.expectRevert("Wrong Fee");
         marketPlace.setFeeListing(newFeeListing);
-        
+
         vm.stopPrank();
     }
 

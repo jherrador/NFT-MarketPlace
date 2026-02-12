@@ -90,7 +90,7 @@ contract MarketPlace is ReentrancyGuard, Ownable {
     function withdrawFees() external onlyOwner {
         uint256 amount = address(this).balance;
 
-        (bool success, ) = owner().call{value: amount}("");
+        (bool success,) = owner().call{value: amount}("");
         require(success);
     }
 }
