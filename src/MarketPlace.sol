@@ -13,7 +13,7 @@ contract MarketPlace is ReentrancyGuard, Ownable {
         uint256 tokenId;
         uint256 price;
     }
-    mapping(address => mapping(uint256 => Listing)) marketplaceListing;
+    mapping(address => mapping(uint256 => Listing)) public marketplaceListing;
     uint256 public feeListing;
     uint256 public feeSellPercentage;
 
@@ -56,14 +56,19 @@ contract MarketPlace is ReentrancyGuard, Ownable {
 
     function buyNft(address nftAddress_, uint256 tokenId_) external payable nonReentrant {
         Listing memory nftToBuy = marketplaceListing[nftAddress_][tokenId_];
+        uint256 sellingFee = (nftToBuy.price * feeSellPercentage) / 100;
+
         require(nftToBuy.nftAddress != address(0), "NFT not listed");
-        require(msg.value == nftToBuy.price + feeListing, "Incorrect amount of Ether");
+        require(msg.value == nftToBuy.price, "Incorrect amount of Ether");
+        require(sellingFee < nftToBuy.price, "Fee to high");
 
         delete (marketplaceListing[nftAddress_][tokenId_]);
 
         IERC721(nftAddress_).safeTransferFrom(nftToBuy.seller, msg.sender, nftToBuy.tokenId);
 
-        (bool success,) = nftToBuy.seller.call{value: nftToBuy.price}("");
+        uint256 priceWithFeesApplied = nftToBuy.price - sellingFee;
+
+        (bool success,) = nftToBuy.seller.call{value: priceWithFeesApplied}("");
         require(success, "Transfer failed");
 
         emit BuyNft(nftToBuy.seller, msg.sender, nftToBuy.nftAddress, nftToBuy.tokenId, nftToBuy.price);
